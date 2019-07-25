@@ -18,6 +18,7 @@ Stanford University <br>
  - [x] Run virtual knock out screens on multiple genes
  - [x] Run virtual expression screens on any percentile of the population
  - [x] Run virtual lineage screens to compare cancer types
+ - [x] Fully stand-alone R-shiny application wrapped in Electron Desktop framework
  
  # Credit
  
@@ -34,5 +35,9 @@ Robin M. Meyers, Jordan G. Bryan, James M. McFarland, Barbara A. Weir, ... David
 Cancer Cell Line Encyclopedia Consortium, and Genomics of Drug Sensitivity in Cancer Consortium. 2015. Pharmacogenomic Agreement between Two Cancer Cell Line Data Sets. Nature 528 (7580):84–87. https://doi.org/10.1038/nature15736.
 
 Jordi Barretina, Giordano Caponigro, Nicolas Stransky, Kavitha Venkatesan, William R. Sellers, Robert Schlegel, Levi A. Garraway, et. al. 2012. The Cancer Cell Line Encyclopedia Enables Predictive Modelling of Anticancer Drug Sensitivity. Nature 483 (7391):603–7. https://doi.org/10.1038/nature11003.
+
+__Framework__
+
+The integration of R-Shiny into Electron uses <a href="https://portableapps.com/node/32898">R-Portable<a/> and was inspired and adapted from Katie Sasso of the Columbus Collaboratory: <a href="https://github.com/ColumbusCollaboratory/electron-quick-start">https://github.com/ColumbusCollaboratory/electron-quick-start</a>. The template was modified to install and use custom packages locally from an in-app library directory.
 
 
