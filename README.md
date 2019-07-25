@@ -2,6 +2,17 @@
 
 <hr>
 
+# Authorship
+
+**Collin Schlager** 
+
+Department of Biochemistry
+
+Stanford University
+
+
+<a href="mailto:schlager@stanford.edu">schlager@stanford.edu</a>
+
 # Features
 
  - [x] Virtually screen cancer cell lines using the Broad Institute's DepMap data
