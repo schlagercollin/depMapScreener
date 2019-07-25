@@ -21,6 +21,33 @@ Stanford University <br>
  - [x] Run virtual lineage screens to compare cancer types
  - [x] Fully stand-alone R-shiny application wrapped in Electron Desktop framework
  
+ # Download Instructions
+ 
+ 1) Click on the `releases` button in the bar above (the one that has "commits", "branches", and "contributors" on it)
+ 2) Under `Assets`, download the `.dmg` file
+ 3) Open the `.dmg` file
+ 4) At this point, you can click the application to run, or you can click and drag it into the Applications folder to copy it to your computer.
+ 5) Run the app by doubling clicking the icon
+     - Depending on your security preferences, your computer may warn you about the app coming from an unidentified developer (that's me)
+     - To give the app permissions (you only need to do this once), go into your `System Preferences` and click on `Security and Privacy`. There should be dialog box that says the app wants permission to open. Hit `Run Anyway`.
+     - If the app doesn't open, re-run the application by double clicking the icon.
+     
+### Troubleshooting
+
+1) The app icon isn't loading! It just has a generic icon.
+     - This is a known issue and one that will be (hopefully) fixed in the next release
+     - You can restore the icon by doing the following:
+          1) Right click the DepMapScreener application and click `Show Package Contents`
+          2) Click into the `Contents` folder
+          3) Then click into the following folders `Resources/app/assets/icons/png`
+          4) Double click to open the `appIcon.png` file in Preview
+          5) Select and copy the image contents by hitting `Cmd+a` and `Cmd+c`
+          6) With the image contents (NOT FILE) copied, go back to the folder with the DepMapScreener application
+          7) Single click the main application and hit `Cmd+i`
+          8) Click the little icon on the top right and paste the icon contents in with `Cmd+v`
+          9) You can also try to paste the image contents into the larger icon under the Preview tab
+ 
+ 
  # Credit
  
 __Inspiration__
