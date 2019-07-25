@@ -7,13 +7,10 @@
 **Collin Schlager** 
 
 <p>
-Department of Biochemistry
-</p>
-<p>
-Stanford University
-</p>
-
+Department of Biochemistry <br>
+Stanford University <br>
 <a href="mailto:schlager@stanford.edu">schlager@stanford.edu</a>
+ </p>
 
 # Features
 
