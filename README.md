@@ -8,6 +8,7 @@
 
 <p>
 Department of Biochemistry <br>
+Department of Computer Science <br>
 Stanford University <br>
 <a href="mailto:schlager@stanford.edu">schlager@stanford.edu</a>
  </p>
