@@ -1,0 +1,26 @@
+{
+  "name": "depMapScreener",
+  "productName": "DepMapScreener",
+  "version": "1.0.1",
+  "description": "A data exploration platform using the Broad Institute's DepMap data.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --out=ElectronShinyAppMac",
+    "package-win": "electron-packager . --overwrite --platform=win32 --arch=ia32 --icon=cc.ico --out=ElectronShinyAppWindows --version-string.CompanyName=ColumbusCollaboratory --version-string.FileDescription=CE --version-string.ProductName=\"Shiny Electron App\"",
+    "package-linux": "electron-packager . --overwrite --platform=linux --arch=x64 --icon=assets/icons/png/1024x1024.png --prune=true --out=ElectronShinyAppMac"
+  },
+  "repository": "https://github.com/schlagercollin/depMapScreener",
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "author": "Collin Schlager <schlager@stanford.edu> (https://profiles.stanford.edu/collin-schlager)",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^5.0.7"
+  }
+}

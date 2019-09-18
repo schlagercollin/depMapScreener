@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<div class="col-sm-8">
+  <h3>Collin Schlager</h3>
+  
+  <div style="margin-left: 20px;">
+    <!--<p style="color: grey; font-style: italic">Developer</p>-->
+    <p style="margin: 0px;">Department of Biochemistry</p>
+    <p style="margin: 0px;">Stanford University</p>
+    <a href="mailto:schlager@stanford.edu" style="margin: 0px;">schlager@stanford.edu</a>
+    <p style="margin: 0px;">(Summer 2019)</p>
+  </div>
+  
+  <h3>Version</h3>
+    <div style="margin-left: 20px;">
+      <p>
+        1.0.1 
+        <br>
+        <a href="https://github.com/schlagercollin/depMapScreener">
+          GitHub Repo
+        </a>
+      </p>
+    </div>
+    
+  <hr>
+    
+  <h3>Description</h3>
+    <p>An R-Shiny application to visualize virtual screens using the Broad Institute's DepMap data.</p>
+  
+    <ol>
+      
+      <li><h5>Parameters (start here)</h5></li>
+        
+          <p>
+            Define two groups of cell lines to compare genetic
+            dependencies.
+          </p>
+          
+          <p style="font-style: italic">
+            "Knock Out" separates cell lines into 
+            two groups determined by whether they have damaging mutations in a given gene.
+          </p>
+          
+      <li><h5>Screen Plot</h5></li>
+          <p>
+            View differential dependencies for each gene.
+          </p>
+          
+          <p style="font-style: italic">
+            A volcano plot with difference in mean depedency score (x-axis) and significance of the difference (y-axis) 
+            is plotted for every gene. Negative x-axis values imply enhanced dependency in the condition group.
+          </p>
+          
+      <li><h5>Gene Plot</h5></li>
+          <p>
+            View the depedency score distributions across cell lines for a given gene.
+          </p>
+          
+          <p style="font-style: italic">
+            Violin plots displaying the distribution of dependency score for the condition group and the control group.
+          </p>
+          
+      <li><h5>Table</h5></li>
+          <p>
+            View and download the quantitative results of the screen.
+          </p>
+          
+          <p style="font-style: italic">
+            Statistics on the differential dependencies for each gene across the two cell line groups.
+          </p>
+          
+      <li><h5>Conditioned Cell Lines</h5></li>
+          <p>
+            View the cell lines that belong to your condition group.
+          </p>
+          
+          <p style="font-style: italic">
+            The cell lines that have been grouped together based on the parameters chosen.
+          </p>
+          
+      <li><h5>Mutation Lookup</h5></li>
+          <p>
+            Explore the mutation space represented in the DepMap data gene-by-gene.
+          </p>
+          
+          <p style="font-style: italic">
+            Given an input gene, displays the cell lines that have annotated mutations in that gene.
+          </p>
+          
+          
+        
+
+    </ol>
+    
+    
+  <hr>
+  
+  <h3>Data Credit</h3>
+  <div style="margin-left: 20px;">
+  <p>
+    Analysis code adapted from Chan et al. in Nature, April 2019: 
+    <a href="https://doi.org/10.1038/s41586-019-1102-x">https://doi.org/10.1038/s41586-019-1102-x</a>
+    .
+  </p>
+  <p>
+    Data comes from the Broad Institute's Dep Map
+    <a href="https://depmap.org/portal/">https://depmap.org/portal/</a>
+    .
+  </p>
+  <p>DepMap, Broad (2019): DepMap Achilles 19Q1 Public. figshare. Fileset. doi:10.6084/m9.figshare.7655150</p>
+  <br>
+  <p>Robin M. Meyers, Jordan G. Bryan, James M. McFarland, Barbara A. Weir, ... David E. Root, William C. Hahn, Aviad Tsherniak. Computational correction of copy number effect improves specificity of CRISPR-Cas9 essentiality screens in cancer cells. Nature Genetics 2017 October 49:1779–1784. doi:10.1038/ng.3984</p>
+  <br>
+  <p>
+    Cancer Cell Line Encyclopedia Consortium, and Genomics of Drug Sensitivity in Cancer Consortium. 2015. Pharmacogenomic Agreement between Two Cancer Cell Line Data Sets. Nature 528 (7580):84–87. 
+    <a href="https://doi.org/10.1038/nature15736">https://doi.org/10.1038/nature15736</a>
+    .
+  </p>
+  <br>
+  <p>
+    Jordi Barretina, Giordano Caponigro, Nicolas Stransky, Kavitha Venkatesan, William R. Sellers, Robert Schlegel, Levi A. Garraway, et. al. 2012. The Cancer Cell Line Encyclopedia Enables Predictive Modelling of Anticancer Drug Sensitivity. Nature 483 (7391):603–7. 
+    <a href="https://doi.org/10.1038/nature11003">https://doi.org/10.1038/nature11003</a>
+    .
+  </p>
+  </div>
+  <h3>Framework Help</h3>
+  <div style="margin-left: 20px;">
+  <p>
+    For Electron deployment, the following template was modified: 
+    <a href="https://github.com/ColumbusCollaboratory/electron-quick-start">https://github.com/ColumbusCollaboratory/electron-quick-start</a>
+  </p>
+  </div>
+</div>

@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568831885331.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "E03B639B",
+    "lastKnownWriteTime" : 1568838699,
+    "last_content_update" : 1568838699559,
+    "path" : "/Volumes/Rohatgi_CRISPR_Drive/Rohatgi Lab/DepMap Exploration/electron-quick-start/server.R",
+    "project_path" : "server.R",
+    "properties" : {
+        "cursorPosition" : "47,44",
+        "scrollLine" : "30"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
