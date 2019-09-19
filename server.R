@@ -15,15 +15,16 @@ startUp <- function(session) {
   updateSelectizeInput(session, 'myMutationAnnotation', choices = mutationAnnotations, server = TRUE, selected = "damaging")
   updateSelectizeInput(session, 'myExpressionGene', choices = geneList, server = TRUE)
   updateSelectizeInput(session, 'myLineage', choices = lineages, server = TRUE)
-  updateSelectizeInput(session, 'mutationLookup_gene', choices = geneList, server = TRUE)
+  updateSelectizeInput(session, 'mutationLookup_query', choices = c(geneList, CCLE_mutations$DepMap_ID), server = TRUE)
 }
 
 createPlots <- function(input, output, analysisData){
   
   output$plot <- renderPlotly({
     
-    plot_ly(analysisData[["Enrichment"]], x = ~EffectSize,
-                 y = ~`-log10(p.value)`,
+    plot_ly(analysisData[["Enrichment"]],
+                 x = ~`EffectSize`,
+                 y = ~get(input$enrichmentPlot_yaxis),
                  text = ~Gene,
                  hovertemplate = paste(
                    "<b>%{text}</b><br>",
@@ -31,9 +32,9 @@ createPlots <- function(input, output, analysisData){
                    "%{y}",
                    "<extra></extra>"
                  ),
-                 color = ~`-log10(p.value)`,
+                 color = ~get(input$enrichmentPlot_yaxis),
                  colors = "OrRd",
-                 size = ~`-log10(p.value)`,
+                 size = ~get(input$enrichmentPlot_yaxis),
                  type = "scattergl",
                  mode = "markers",
                  height = 500,
@@ -44,8 +45,8 @@ createPlots <- function(input, output, analysisData){
                    )
                  )) %>%
       hide_colorbar() %>%
-      layout(xaxis = list(title = "Mean Depedency Score Difference"),
-             yaxis = list(title = "-log(p.value)"),
+      layout(xaxis = list(title = "Mean Dependency Score Difference"),
+             yaxis = list(title = input$enrichmentPlot_yaxis),
              showlegend = FALSE)
   })
   
@@ -67,12 +68,10 @@ createPlots <- function(input, output, analysisData){
     
     geneDep = analysisData[["GeneDependencies"]]
     
-    print(colnames(geneDep))
-    
-    
     p <- plot_ly(geneDep,
                  x = ~`Cell.Line.Group`,
-                 y = ~`CTNNB1 (1499)`,
+                 y = ~get(input$myPlotGene),
+                 # split = ~`Cell.Line.Group`,
                  text = ~`Cell.Line.Name`,
                  type = 'violin',
                  height = 500,
@@ -108,7 +107,12 @@ server <- function(input, output, session) {
   
   observeEvent(analysisData(), {
     updateSelectizeInput(session, 'myPlotGene', choices = analysisData()$Enrichment$Gene, server = TRUE)
+    
+    plotAxisChoices = colnames(analysisData()$Enrichment)[-1] # without first `Gene` column
+    
+    updateSelectizeInput(session, 'enrichmentPlot_yaxis', selected = "-log10(p.value)", choices = plotAxisChoices, server = TRUE)
     hideElement(selector = ".item-loading")
+    createPlots(input, output, analysisData())
   })
   
   # ================================== #
@@ -123,7 +127,7 @@ server <- function(input, output, session) {
   # PLOTS                              #
   # ================================== #
   
-  createPlots(input, output, analysisData())
+  # createPlots(input, output, analysisData())
   
   # ================================== #
   # TABLES                             #
@@ -131,7 +135,7 @@ server <- function(input, output, session) {
 
   # Generate an HTML table view of the data
   output$mytable = DT::renderDataTable(
-    analysisData()$data,
+    analysisData()[["Enrichment"]],
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -140,7 +144,7 @@ server <- function(input, output, session) {
   )
   
   output$conditionCellLines = DT::renderDataTable(
-    analysisData()$conditionCellLines,
+    analysisData()[["CellLineInfo"]][["condition"]],
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -149,7 +153,7 @@ server <- function(input, output, session) {
   )
   
   output$controlCellLines = DT::renderDataTable(
-    analysisData()$controlCellLines,
+    analysisData()[["CellLineInfo"]][["control"]],
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -158,7 +162,7 @@ server <- function(input, output, session) {
   )
   
   output$mutationsTable = DT::renderDataTable(
-    mutationLookupanalysisData(),
+    mutationLookupData(),
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -166,22 +170,66 @@ server <- function(input, output, session) {
     )
   )
   
-  # Downloadable csv of selected dataset ----
-  output$downloadData <- downloadHandler(
+  # Downloadable csv of enrichment dataset ----
+  output$downloadEnrichment <- downloadHandler(
     filename = function() {
-      paste(downloadData$name, ".csv", sep = "")
+      paste("enrichment_analysis", ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(downloadData$data, file)
+      write.csv(analysisData()[["Enrichment"]], file)
+    }
+  )
+  
+  # Downloadable csv of conditioned cell lines dataset ----
+  output$downloadConditioned <- downloadHandler(
+    filename = function() {
+      paste("condition_cell_lines", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(analysisData()[["CellLineInfo"]][["condition"]], file)
+    }
+  )
+  
+  # Downloadable csv of control cell lines dataset ----
+  output$downloadControl <- downloadHandler(
+    filename = function() {
+      paste("control_cell_lines", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(analysisData()[["CellLineInfo"]][["control"]], file)
+    }
+  )
+  
+  # Downloadable csv of control cell lines dataset ----
+  output$downloadGeneDep <- downloadHandler(
+    filename = function() {
+      paste("gene_dependency", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(analysisData()[["GeneDependencies"]], file)
     }
   )
   
   mutationLookupData <- eventReactive(input$lookupMutations, {
     
-    myQuery <- input$mutationLookup_gene
-    geneList <- lapply(myQuery, getGeneName)
+    query = input$mutationLookup_query
     
-    data <- mutsInDepMap[mutsInDepMap$Hugo_Symbol %in% geneList, ]
+    # if the query is a cell line ID (depmap ID)...
+    if (startsWith(query, "ACH-")){ 
+      
+      print("Cell Line")
+
+      data <- mutsInDepMap[mutsInDepMap$DepMap_ID %in% query, ]
+      
+    # otherwise, it is a gene
+    } else {
+      
+      print("Gene")
+      
+      geneList <- lapply(query, getGeneName)
+      data <- mutsInDepMap[mutsInDepMap$Hugo_Symbol %in% geneList, ]
+
+    }
     
     return(data)
     

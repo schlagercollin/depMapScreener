@@ -234,6 +234,18 @@ ui <- fluidPage(
        )
     ),
     tabPanel("Screen Plot",
+             inputPanel(
+               selectizeInput("enrichmentPlot_yaxis",
+                              "Y Axis", 
+                              choices = c("-log10(p.value)", "-log10(q.value)"),
+                              selected = "-log10(p.value)",
+                              multiple = FALSE,
+                              options = list(
+                                openOnFocus = FALSE,
+                                maxOptions = 20
+                              )
+               )
+             ),
              div(
                class = "no-screen-run",
                  h4("No Current Screen")
@@ -242,7 +254,22 @@ ui <- fluidPage(
                class = "item-loading",
                HTML('<div class="black lds-facebook"><div></div><div></div><div></div></div>')
              ),
-             plotlyOutput("plot")
+             plotlyOutput("plot"),
+             em("Plot Help:"),
+             br(),
+             em("X-Axis:"),
+             p("Cell lines in the condition group have enriched dependence upon
+                genes that are skewed left (negative mean difference)."),
+             p("The CERES dependency score is scaled such that a negative value
+               signifies a cell line is dependent upon that gene. The mean difference
+               here is the mean dependency score across cell lines in  the conditioned
+               group minus the mean dependency score across cell lines in the control
+               group. Thus, a negative value means cell lines in the condition group
+               were more dependent upon that particular gene."),
+             em("Y-Axis:"),
+             p("Typical choices for the y-axis will be -log10(p.value) or -log10(q.value).
+               These choices give a standard volcano plot. The q-value is a FDR-corrected
+               version of the p-value (Benjamini-Hochberg Correction).")
              
     ),
     tabPanel("Gene Plot",
@@ -259,7 +286,7 @@ ui <- fluidPage(
                                     maxOptions = 10
                                   )
                    ),
-                 actionButton("runGenePlot", "Plot Gene Level"),
+                 downloadButton("downloadGeneDep", "Download Table"),
                  style = "padding-bottom: 450px;",
                  width = 12
                ),
@@ -277,13 +304,13 @@ ui <- fluidPage(
                cellArgs = list(style='white-space: normal;') 
              )
     ),
-    tabPanel("Table", 
+    tabPanel("Enrichment Results", 
              div(
                class = "no-screen-run",
                h4("No Current Screen")
              ),
              DT::dataTableOutput("mytable"),
-             downloadButton("downloadData", "Download Table")
+             downloadButton("downloadEnrichment", "Download Table")
     ),
     
     
@@ -293,7 +320,8 @@ ui <- fluidPage(
                class = "no-screen-run",
                h4("No Current Screen")
              ),
-             DT::dataTableOutput("conditionCellLines")
+             DT::dataTableOutput("conditionCellLines"),
+             downloadButton("downloadConditioned", "Download Table")
     ),
     
     tabPanel("Control Cell Lines",
@@ -301,21 +329,22 @@ ui <- fluidPage(
                class = "no-screen-run",
                h4("No Current Screen")
              ),
-             DT::dataTableOutput("controlCellLines")
+             DT::dataTableOutput("controlCellLines"),
+             downloadButton("downloadControl", "Download Table")
     ),
     
     tabPanel("Mutation Lookup",
              
              inputPanel(
-                   selectizeInput("mutationLookup_gene",
-                                  "Gene(s) Lookup", 
+                   selectizeInput("mutationLookup_query",
+                                  "Gene(s) or Cell Line", 
                                   choices = NULL,
                                   selected = NULL,
                                   multiple = TRUE,
                                   options = list(
                                     openOnFocus = FALSE,
                                     maxOptions = 10,
-                                    placeholder = "Gene(s)"
+                                    placeholder = "e.g. APC or ACH-000004"
                                   )
                    ),
                    actionButton("lookupMutations", "Search Mutations",
@@ -323,9 +352,6 @@ ui <- fluidPage(
              ),
              DT::dataTableOutput("mutationsTable")
     ),
-    
-    
-    
     tabPanel("About", htmlOutput("about_HTML"))          
   ),
   

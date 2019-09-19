@@ -51,6 +51,7 @@ doEnrichmentAnalysis <- function(depMatrix, cellLineGroups){
                                           covars = NULL, weights = NULL,
                                           target_type = 'Gene')
   enrichmentResults$`-log10(p.value)` = -log10(enrichmentResults$`p.value`)
+  enrichmentResults$`-log10(q.value)` = -log10(enrichmentResults$`q.value`)
   
   return(enrichmentResults)
 }
@@ -75,7 +76,7 @@ convertDepMapIDToCCLE <- function(depmapIDs){
 getGeneDependencies <- function(cellLineGroups){
   
   cellLineGroup <- ifelse(cellLineGroups, "Condition", "Control")
-  geneDependencies <- copy(Achilles_gene_effect)
+  geneDependencies <- Achilles_gene_effect
   
   oldColumns = colnames(geneDependencies)
   
