@@ -1,7 +1,7 @@
 {
   "name": "depMapScreener",
   "productName": "DepMapScreener",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A data exploration platform using the Broad Institute's DepMap data.",
   "main": "main.js",
   "scripts": {

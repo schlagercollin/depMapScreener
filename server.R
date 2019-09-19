@@ -6,7 +6,7 @@ library(plotly)
 source("depMapAnalysis.R")
 
 # Load in the DepMap data (into global vars)
-# loadFeatherFiles()
+loadFeatherFiles()
 
 # FUNCTION
 # ========
