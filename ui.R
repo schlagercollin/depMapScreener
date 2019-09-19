@@ -104,12 +104,17 @@ appCSS <- "
 }
 "
 
+# ================================== #
+# R Shiny UI Object                  #
+# ================================== #
 
-ui <- fluidPage(
+# R-Shiny UI doesn't really display well for readability.
+# TODO: clean up spacing so this is more readable
+ui <- fluidPage(theme = "app.css",
   
   useShinyjs(),
   
-  inlineCSS(appCSS),
+  # inlineCSS(appCSS),
   
   # Loading Message 
   div(
@@ -129,7 +134,6 @@ ui <- fluidPage(
   ),
     
   # <-- Begin tabset panel -->
-  
   tabsetPanel(
     tabPanel("Parameters",
              
@@ -407,7 +411,6 @@ ui <- fluidPage(
     ),
     tabPanel("About", htmlOutput("about_HTML"))          
   ),
-  
   # <-- end tabset panel -->
   width = 12
 )
