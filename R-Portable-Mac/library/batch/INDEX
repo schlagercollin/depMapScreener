@@ -1,0 +1,4 @@
+mergeCsv                Merge CSV Files
+msplit                  Split Vectors for Parallelization
+parseCommandArgs        Parse Command-Line Arguments
+rbatch                  R Batch Submission

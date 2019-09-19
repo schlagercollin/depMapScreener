@@ -1,0 +1,25 @@
+Package: gower
+Maintainer: Mark van der Loo <mark.vanderloo@gmail.com>
+License: GPL-3
+Title: Gower's Distance
+LazyData: no
+Type: Package
+LazyLoad: yes
+Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre"),email="mark.vanderloo@gmail.com")
+    , person("David", "Turner", role="ctb"))
+Description: Compute Gower's distance (or similarity) coefficient between records. Compute 
+    the top-n matches between records. Core algorithms are executed in parallel on systems
+    supporting OpenMP.
+Version: 0.2.1
+URL: https://github.com/markvanderloo/gower
+BugReports: https://github.com/markvanderloo/gower/issues
+Suggests: tinytest (>= 0.9.3),
+RoxygenNote: 6.1.1
+NeedsCompilation: yes
+Packaged: 2019-05-14 19:35:03 UTC; mark
+Author: Mark van der Loo [aut, cre],
+  David Turner [ctb]
+Repository: CRAN
+Date/Publication: 2019-05-14 21:00:23 UTC
+Built: R 3.5.2; x86_64-apple-darwin15.6.0; 2019-05-15 05:52:37 UTC; unix
+Archs: gower.so.dSYM

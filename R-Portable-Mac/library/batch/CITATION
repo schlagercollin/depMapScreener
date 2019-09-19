@@ -1,0 +1,19 @@
+citHeader("To cite batch in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Passing in Command Line Arguments and Parallel Cluster/Multicore Batching in {R} with {batch}",
+  author       = personList(as.person("Thomas J. Hoffmann")),
+  journal      = "Journal of Statistical Software, Code Snippets",
+  year         = "2011",
+  volume       = "39",
+  number       = "1",
+  pages        = "1--11",
+  url          = "http://www.jstatsoft.org/v39/c01/",
+
+  textVersion  =
+  paste("Thomas J. Hoffmann (2011).",
+        "Passing in Command Line Arguments and Parallel Cluster/Multicore Batching in R with batch.",
+        "Journal of Statistical Software, Code Snippets, 39(1), 1-11.",
+        "URL http://www.jstatsoft.org/v39/c01/.")
+)
+
