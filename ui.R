@@ -99,6 +99,9 @@ appCSS <- "
     height: 26px;
   }
 }
+.right{
+  float: right;
+}
 "
 
 
@@ -137,7 +140,8 @@ ui <- fluidPage(
              "screenType", "Screen Type",
              c(`Knock Out` = "knockout",
                `Expression` = "expression",
-               `Lineage` = "lineage")),
+               `Lineage` = "lineage",
+               `Custom` = "custom")),
            
            # Knock Out Inputs
            conditionalPanel(
@@ -213,6 +217,16 @@ ui <- fluidPage(
              )
            ),
            
+           # Custom Inputs
+           conditionalPanel(
+             condition = "input.screenType == 'custom'",
+             textAreaInput("custom_condition_IDs",
+                            "Condition Group IDs",
+                           resize = "vertical",
+                           placeholder = "e.g.\nACH-000009\nACH-000015\nACH-000150\nACH-000235\nACH-000253\nACH-000258\n...",
+                           height = "400px")
+           ),
+           
            actionButton("runAnalysis", "Run Virtual Screen"),
            style = "padding-bottom: 300px;",
            width = 12
@@ -233,60 +247,75 @@ ui <- fluidPage(
         cellArgs = list(style='white-space: normal;') 
        )
     ),
-    tabPanel("Screen Plot",
-             inputPanel(
-               selectizeInput("enrichmentPlot_yaxis",
-                              "Y Axis", 
-                              choices = c("-log10(p.value)", "-log10(q.value)"),
-                              selected = "-log10(p.value)",
-                              multiple = FALSE,
-                              options = list(
-                                openOnFocus = FALSE,
-                                maxOptions = 20
-                              )
-               )
+    tabPanel("Enrichment Results", 
+        tabsetPanel(
+             tabPanel("Plot",
+                      inputPanel(
+                        selectizeInput("enrichmentPlot_yaxis",
+                                       "Y Axis", 
+                                       choices = c("-log10(p.value)", "-log10(q.value)"),
+                                       selected = "-log10(p.value)",
+                                       multiple = FALSE,
+                                       options = list(
+                                         openOnFocus = FALSE,
+                                         maxOptions = 20
+                                       )
+                        )
+                      ),
+                      div(
+                        class = "no-screen-run",
+                        h4("No Current Screen")
+                      ),
+                      div(
+                        class = "item-loading",
+                        HTML('<div class="black lds-facebook"><div></div><div></div><div></div></div>')
+                      ),
+                      plotlyOutput("plot")
              ),
-             div(
-               class = "no-screen-run",
+             tabPanel("Table",
+               div(
+                 class = "no-screen-run",
                  h4("No Current Screen")
-              ),
-             div(
-               class = "item-loading",
-               HTML('<div class="black lds-facebook"><div></div><div></div><div></div></div>')
+               ),
+               DT::dataTableOutput("mytable")
              ),
-             plotlyOutput("plot"),
-             em("Plot Help:"),
-             br(),
-             em("X-Axis:"),
-             p("Cell lines in the condition group have enriched dependence upon
+             tabPanel("Info",
+               inputPanel(downloadButton("downloadEnrichment", "Download Enrichment Results")),
+               strong("Plot Help:"),
+               br(),
+               em("X-Axis:"),
+               p("Cell lines in the condition group have enriched dependence upon
                 genes that are skewed left (negative mean difference)."),
-             p("The CERES dependency score is scaled such that a negative value
+               p("The CERES dependency score is scaled such that a negative value
                signifies a cell line is dependent upon that gene. The mean difference
                here is the mean dependency score across cell lines in  the conditioned
                group minus the mean dependency score across cell lines in the control
                group. Thus, a negative value means cell lines in the condition group
                were more dependent upon that particular gene."),
-             em("Y-Axis:"),
-             p("Typical choices for the y-axis will be -log10(p.value) or -log10(q.value).
+               em("Y-Axis:"),
+               p("Typical choices for the y-axis will be -log10(p.value) or -log10(q.value).
                These choices give a standard volcano plot. The q-value is a FDR-corrected
                version of the p-value (Benjamini-Hochberg Correction).")
-             
+             )
+        )
     ),
-    tabPanel("Gene Plot",
+    
+    tabPanel("Gene-Level",
+        tabsetPanel(
+          tabPanel("Plot",
              splitLayout(
                mainPanel(
                  
-                  selectizeInput("myPlotGene",
-                                  "Gene to Plot", 
-                                  choices = NULL,
-                                  selected = NULL,
-                                  multiple = FALSE,
-                                  options = list(
-                                    openOnFocus = FALSE,
-                                    maxOptions = 10
-                                  )
-                   ),
-                 downloadButton("downloadGeneDep", "Download Table"),
+                 selectizeInput("myPlotGene",
+                                "Gene to Plot", 
+                                choices = NULL,
+                                selected = NULL,
+                                multiple = FALSE,
+                                options = list(
+                                  openOnFocus = FALSE,
+                                  maxOptions = 10
+                                )
+                 ),
                  style = "padding-bottom: 450px;",
                  width = 12
                ),
@@ -303,34 +332,57 @@ ui <- fluidPage(
                # necessary for word wrap
                cellArgs = list(style='white-space: normal;') 
              )
+          ),
+          # tabPanel("Table",
+          #      div(
+          #        class = "no-screen-run",
+          #        h4("No Current Screen")
+          #      ),
+          #      DT::dataTableOutput("geneLevelDep")
+          # ),
+          tabPanel("Info",
+              inputPanel(
+                downloadButton("downloadGeneDep", "Download Gene-Level Dependencies (~160 MB)")
+              ),
+              p(
+                strong("Warning"),
+                br(),
+                p("This file is large and preparing it for download will take a few dozen seconds. Please be patient after clicking download.")
+              ),
+              p(
+                strong("Note:"),
+                br(),
+                p("This file includes the gene-level dependency scores for each cell line. It also includes a column grouping the cell lines into the control or condition group."),
+                p("The violin plots are generated by plotting the cell group indicator on the x-axis and a given gene's dependency scores on the y-axis.")
+              )
+          )
+        )
     ),
-    tabPanel("Enrichment Results", 
+    
+    
+    tabPanel("View Cell Lines",
+        tabsetPanel(
+          tabPanel("Condition Group",
              div(
                class = "no-screen-run",
                h4("No Current Screen")
              ),
-             DT::dataTableOutput("mytable"),
-             downloadButton("downloadEnrichment", "Download Table")
-    ),
-    
-    
-    
-    tabPanel("Conditioned Cell Lines",
+             DT::dataTableOutput("conditionCellLines")
+          ),
+          tabPanel("Control Group",
              div(
                class = "no-screen-run",
                h4("No Current Screen")
              ),
-             DT::dataTableOutput("conditionCellLines"),
-             downloadButton("downloadConditioned", "Download Table")
-    ),
-    
-    tabPanel("Control Cell Lines",
-             div(
-               class = "no-screen-run",
-               h4("No Current Screen")
-             ),
-             DT::dataTableOutput("controlCellLines"),
-             downloadButton("downloadControl", "Download Table")
+             DT::dataTableOutput("controlCellLines")
+          ),
+          tabPanel("Info",
+             inputPanel(
+                downloadButton("downloadConditioned", "Download Condition Group"),
+                downloadButton("downloadControl", "Download Control Group")
+             )
+          )
+        )
     ),
     
     tabPanel("Mutation Lookup",
@@ -350,7 +402,8 @@ ui <- fluidPage(
                    actionButton("lookupMutations", "Search Mutations",
                                 style="margin-top: 25px")
              ),
-             DT::dataTableOutput("mutationsTable")
+             DT::dataTableOutput("mutationsTable"),
+             downloadButton("downloadMutation", "Download Table")
     ),
     tabPanel("About", htmlOutput("about_HTML"))          
   ),

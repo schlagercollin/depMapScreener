@@ -5,7 +5,7 @@ library(plotly)
 source("depMapAnalysis.R")
 
 # Load in the DepMap data (into global vars)
-loadFeatherFiles()
+# loadFeatherFiles()
 
 startUp <- function(session) {
   hideElement(selector = ".item-loading")
@@ -102,7 +102,7 @@ server <- function(input, output, session) {
   
   startUp(session)
   
-  cellLineGroups <- eventReactive(input$runAnalysis, {return(getCellLineGroups(input))})
+  cellLineGroups <- eventReactive(input$runAnalysis, {return(getCellLineGroups(input, output))})
   analysisData <- eventReactive(cellLineGroups(), {return(performAnalysis(cellLineGroups()))})
   
   observeEvent(analysisData(), {
@@ -170,6 +170,14 @@ server <- function(input, output, session) {
     )
   )
   
+  output$geneLevelDep = DT::renderDataTable(
+    analysisData()[["GeneDependencies"]],
+    options = list(
+      scrollX = TRUE,
+      scrollY = TRUE
+    )
+  )
+  
   # Downloadable csv of enrichment dataset ----
   output$downloadEnrichment <- downloadHandler(
     filename = function() {
@@ -207,6 +215,15 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       write.csv(analysisData()[["GeneDependencies"]], file)
+    }
+  )
+  
+  output$downloadMutation <- downloadHandler(
+    filename = function() {
+      paste("mutation_annotations", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(mutationLookupData(), file)
     }
   )
   

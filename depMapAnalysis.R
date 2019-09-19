@@ -17,13 +17,14 @@ mutationAnnotations <<- scan("depmapData_feather/mutationAnnotations.csv",
                              what="character",
                              sep=",")
 
-getCellLineGroups <- function(input){
+getCellLineGroups <- function(input, output){
   
   showElement(selector = ".item-loading")
   hideElement(selector = ".no-screen-run")
   
   screenType = input$screenType
   print("Generating cell line groups")
+  print(screenType)
   
   if(screenType == 'knockout'){
     return(knockOutScreen(input$myKnockoutGene, input$myMutationAnnotation))
@@ -40,10 +41,32 @@ getCellLineGroups <- function(input){
     
     return(expressionScreen(input$myExpressionGene, input$populationType,  percentile))
   }
-  else { # (screenType == 'lineage')
+  else if(screenType == 'lineage'){
     return(lineageScreen(input$myLineage))
   }
+  else {
+    
+    cellLineIDs = processCellLineList(input$custom_condition_IDs)
+    unmatched = cellLineIDs[!(cellLineIDs %in% Achilles_gene_effect$X1)]
+    cellLineGroups = customScreen(cellLineIDs)
+    
+    if(length(unmatched) > 0){
+      showModal(modalDialog(title = "Unmatched IDs", paste(unmatched ,collapse=" ")))
+    }
+    return(cellLineGroups)
+    
+  }
 };
+
+processCellLineList <- function(id_string){
+  
+  id_string_no_whitespace = gsub("[[:blank:]]", "", id_string)
+  cellLineIDs = strsplit(id_string_no_whitespace, "\n")
+  cellLineIDs = unlist(cellLineIDs)
+  print(cellLineIDs)
+  return(cellLineIDs)
+  
+}
 
 doEnrichmentAnalysis <- function(depMatrix, cellLineGroups){
   
@@ -275,6 +298,14 @@ lineageScreen <- function(lineage){
   
 }
 
+customScreen <- function(cellLineIDs){
+  
+  cellLineGroups = Achilles_gene_effect$X1 %in% cellLineIDs
+  
+  return(cellLineGroups)
+  
+}
+
 violinPlot <- function(effectVec, gene, trueLab = TRUE, falseLab = FALSE){
   
   x <- ifelse(colorectal$effectVec, trueLab, falseLab)
@@ -324,62 +355,3 @@ loadFeatherFiles <- function(){
   
   print("COMPLETE")
 }
-
-# OLD FUNCTIONS BELOW
-
-# knockOut <- function(geneVec, mutationAnnotations, thresh = 4.6){
-# 
-#   geneNames <- lapply(geneVec, getGeneName)
-#   geneMutations <- lapply(geneNames, function(x){
-#     return(getMutations(x, mutationAnnotations))
-#   })
-#   cellLineIDs <- lapply(geneMutations, function(x){
-#     return(x$DepMap_ID)
-#   })
-# 
-#   commonCellLinesWithMutations <- Reduce(intersect, cellLineIDs)
-# 
-#   effectVec <- Achilles_gene_effect$X1 %in% commonCellLinesWithMutations
-#   title <- paste(geneNames, collapse = "+", sep="")
-#   title <- paste("knockOut_", title, "_", sep="")
-#   mutationAnnotations_str <- paste(mutationAnnotations, collapse = "+", sep="")
-#   title <- paste(title, "with_", mutationAnnotations_str, sep="")
-#   results <- analyzeDifference(depMatrix, effectVec, title = title)
-# 
-#   return(results)
-# }
-# 
-# expressionScreen <- function(gene, percentile, side){
-#   
-#   expression <- CCLE_expression[[gene]]
-#   percentile_value <- quantile(expression, c(percentile), names = FALSE)
-#   
-#   if (side == "top"){
-#     selectedIndices <- expression >= percentile_value
-#   } else { # bottom
-#     selectedIndices <- expression <= percentile_value
-#   }
-#   selectedCellLines <- CCLE_expression[selectedIndices, ]$X1
-#   
-#   effectVec <- Achilles_gene_effect$X1 %in% selectedCellLines
-#   
-#   title = paste("expression_", percentile, "_", gene, sep="")
-#   
-#   results <- analyzeDifference(depMatrix, effectVec, title = title)
-#   
-#   return(results)
-# }
-# 
-# compareLineage <- function(lineage, thresh=4.6){
-#   
-#   cellLinesOfInterest_name <- celllineinfo[celllineinfo$Lineage == lineage,]$Name
-#   cellLinesOfInterest_id <- cellLines[cellLines$CCLE_Name %in% cellLinesOfInterest_name,]
-#   
-#   effectVec <- Achilles_gene_effect$X1 %in% cellLinesOfInterest_id$DepMap_ID
-#   
-#   title <- paste("lineage_", lineage, sep="")
-#   
-#   results <- analyzeDifference(depMatrix, effectVec, title= title, thresh = thresh)
-#   
-#   return(results)
-# }
