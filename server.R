@@ -123,8 +123,6 @@ server <- function(input, output, session) {
     df <- data.frame(`x.Effect.Size` = data()$data$EffectSize,
                      `y.neg.log10.p.value` = -log10(data()$data$p.value),
                      `text.Gene.Name` = data()$data$Gene)
-    downloadData$data <<- df
-    downloadData$name <<- "volcano_plot_data"
     
     p <- plot_ly(data()$data, x = ~EffectSize,
             y = ~`-log10(p.value)`,
@@ -174,9 +172,6 @@ server <- function(input, output, session) {
   })
   
   output$genePlot <- renderPlotly({
-    
-    downloadData$data <<- geneLevelData()
-    downloadData$name <<- "gene_level_data"
     
     p <- plot_ly(geneLevelData(),
                  x = ~`Cell.Line.Group`,
@@ -245,10 +240,10 @@ server <- function(input, output, session) {
   # Downloadable csv of selected dataset ----
   output$downloadData <- downloadHandler(
     filename = function() {
-      paste(downloadData$name, ".csv", sep = "")
+      paste(data()$title, ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(downloadData$data, file)
+      write.csv(data()$data, file)
     }
   )
   

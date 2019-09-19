@@ -4,16 +4,16 @@
     "created" : 1568831912961.000,
     "dirty" : false,
     "encoding" : "UTF-8",
-    "folds" : "3|116|74|0|\n",
+    "folds" : "",
     "hash" : "0",
     "id" : "A5CC3409",
-    "lastKnownWriteTime" : 1568838550,
-    "last_content_update" : 1568838558601,
+    "lastKnownWriteTime" : 1568852044,
+    "last_content_update" : 1568852046711,
     "path" : "/Volumes/Rohatgi_CRISPR_Drive/Rohatgi Lab/DepMap Exploration/electron-quick-start/depMapAnalysis.R",
     "project_path" : "depMapAnalysis.R",
     "properties" : {
-        "cursorPosition" : "141,26",
-        "scrollLine" : "124"
+        "cursorPosition" : "109,22",
+        "scrollLine" : "97"
     },
     "read_only" : false,
     "read_only_alternatives" : [
