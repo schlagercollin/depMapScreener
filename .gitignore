@@ -4,3 +4,5 @@ R-Portable-Win/
 depmapData_feather/*
 node_modules/*
 .Rproj.user/*
+.Rproj.user
+.Rhistory
