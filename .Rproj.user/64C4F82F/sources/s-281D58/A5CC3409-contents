@@ -1,6 +1,115 @@
 library(limma)
 library(ggplot2)
 
+geneList <<- scan("depmapData_feather/geneList.csv",
+                  what="character",
+                  sep=",")
+
+lineages <<- scan("depmapData_feather/lineages.csv",
+                  what="character",
+                  sep=",")
+
+depGeneList <<- scan("depmapData_feather/depGenes.csv",
+                     what="character",
+                     sep=",")
+
+mutationAnnotations <<- scan("depmapData_feather/mutationAnnotations.csv",
+                             what="character",
+                             sep=",")
+
+getCellLineGroups <- function(input){
+  
+  showElement(selector = ".item-loading")
+  hideElement(selector = ".no-screen-run")
+  
+  screenType = input$screenType
+  print("Generating cell line groups")
+  
+  if(screenType == 'knockout'){
+    return(knockOutScreen(input$myKnockoutGene, input$myMutationAnnotation))
+  }
+  else if(screenType == 'expression'){
+    
+    if (input$populationType == "top"){
+      percentile <- 1 - (as.numeric(input$topPercentile) / 100)
+    } else {
+      percentile <- (as.numeric(input$botPercentile) / 100)
+    }
+    
+    print(percentile)
+    
+    return(expressionScreen(input$myExpressionGene, input$populationType,  percentile))
+  }
+  else { # (screenType == 'lineage')
+    return(lineageScreen(input$myLineage))
+  }
+};
+
+doEnrichmentAnalysis <- function(depMatrix, cellLineGroups){
+  
+  enrichmentResults <- run_lm_stats_limma(depMatrix, cellLineGroups,
+                                          covars = NULL, weights = NULL,
+                                          target_type = 'Gene')
+  enrichmentResults$`-log10(p.value)` = -log10(enrichmentResults$`p.value`)
+  
+  return(enrichmentResults)
+}
+
+getCellLineInfo <- function(cellLineGroups){
+  conditionCellLines <- Achilles_gene_effect[cellLineGroups, ]$X1
+  conditionCellLines_info <- cellLines[cellLines$DepMap_ID %in% conditionCellLines, ]
+  
+  controlCellLines <- Achilles_gene_effect[!cellLineGroups, ]$X1
+  controlCellLines_info <- cellLines[cellLines$DepMap_ID %in% controlCellLines, ]
+  
+  return(list(condition = conditionCellLines_info, control = controlCellLines_info))
+}
+
+convertDepMapIDToCCLE <- function(depmapIDs){
+  translation <- data.frame("DepMap_ID" = depmapIDs)
+  mini <- cellLines[,c("DepMap_ID", "CCLE_Name")]
+  translation <- left_join(translation, mini, by = "DepMap_ID")
+  return(translation$CCLE_Name)
+}
+
+getGeneDependencies <- function(cellLineGroups){
+  
+  cellLineGroup <- ifelse(cellLineGroups, "Condition", "Control")
+  geneDependencies <- copy(Achilles_gene_effect)
+  
+  oldColumns = colnames(geneDependencies)
+  
+  # convert DepMapIDs to CCLE_IDs
+  depmapIDs <- Achilles_gene_effect$X1
+  cellLineNames = convertDepMapIDToCCLE(depmapIDs)
+  
+  geneDependencies$Cell.Line.Group = cellLineGroup
+  geneDependencies$Cell.Line.Name  = cellLineNames
+  
+  newColumns = c("Cell.Line.Name", "Cell.Line.Group", oldColumns)
+  
+  # reorder so that cell line labels are at the beginning
+  geneDependencies = geneDependencies[newColumns]
+  
+  return(geneDependencies)
+  
+}
+
+performAnalysis <- function(cellLineGroups){
+  
+  #TODO add error when a group has zero cell lines
+  
+  cellline_info = getCellLineInfo(cellLineGroups)
+  enrichment_analysis = doEnrichmentAnalysis(depMatrix, cellLineGroups)
+  gene_dependencies = getGeneDependencies(cellLineGroups)
+  
+  analysisData = list(CellLineInfo = cellline_info,
+                      Enrichment = enrichment_analysis,
+                      GeneDependencies = gene_dependencies)
+  
+  return(analysisData)
+}
+
 run_lm_stats_limma <- function(mat, vec, covars = NULL, weights = NULL, target_type = 'Gene', limma_trend = FALSE) {
   require(limma)
   require(magrittr)
@@ -74,112 +183,95 @@ run_lm_stats_limma <- function(mat, vec, covars = NULL, weights = NULL, target_t
   return(results)
 }
 
-analyzeDifference <- function(depMatrix, effectVec, title="depMapScreen", thresh = 4.6) {
-  
-  numWithCondition <- sum(effectVec)
-  numWithoutCondition <- sum(!effectVec)
-  
-  stats <- list(trial = numWithCondition,
-                control = numWithoutCondition)
-  
-  conditionCellLines <- Achilles_gene_effect[effectVec, ]$X1
-  conditionCellLines_info <- cellLines[cellLines$DepMap_ID %in% conditionCellLines, ]
-  
-  controlCellLines <- Achilles_gene_effect[!effectVec, ]$X1
-  controlCellLines_info <- cellLines[cellLines$DepMap_ID %in% controlCellLines, ]
-  
-  
-  status <- ""
-  
-  # if either group has zero cell lines, give a warning
-  if (sum(stats == 0)){
-    status = "There aren't sufficient cell lines with those parameters in DepMap. \nPlease try another query." 
-    
-    # null out these values since we won't be able to compute statistics
-    plot = NULL
-    CRISPR_res = NULL
-    
-  } else {
-  
-    CRISPR_res <- run_lm_stats_limma(depMatrix, effectVec, covars = NULL, weights = NULL, target_type = 'Gene')
-    
-    CRISPR_res$`-log10(p.value)` <- -log10(CRISPR_res$`p.value`)
-    
-  }
-  
-  results <- list(data = CRISPR_res,
-                  effectVec = effectVec,
-                  stats = stats,
-                  status = status,
-                  conditionCellLines = conditionCellLines_info,
-                  controlCellLines = controlCellLines_info,
-                  title = title)
-  
-  class(results) <- "analysisResults" 
-  
-  return(results)
-  
-}
-
 getGeneName <- function(geneStr){
   return(strsplit(geneStr, " ")[[1]][1])
 }
 
-knockOut <- function(geneVec, mutationAnnotations, thresh = 4.6){
+getGeneNames <- function(geneVector){
+  return(lapply(geneVector, getGeneName))
+}
+
+getMutations <- function(geneName, mutationAnnotations = "damaging"){
   
-  geneNames <- lapply(geneVec, getGeneName)
+  allMutationsOfGene <- CCLE_mutations[CCLE_mutations$Hugo_Symbol == geneName, ]
+  subsetMutations <- allMutationsOfGene[allMutationsOfGene$Variant_annotation %in% mutationAnnotations, ]
+  
+  return(subsetMutations)
+}
+
+getCellLinesWithMutations <- function(geneNames, mutationTypes){
+  
+  geneMutations = lapply(geneNames, function(geneName){
+    getMutations(geneName, mutationTypes)
+  })
+  
+  cellLineIDs = lapply(geneMutations, function(x){
+    x$DepMap_ID
+  })
+  
+  cellLinesWithAllMutations = Reduce(intersect, cellLineIDs)
+  return(cellLinesWithAllMutations)
+}
+
+# ================================================= #
+# Screen Type Functions                             #
+#   - these functions return a cellLineGroup vector #
+#      for the given screen type                    #
+# ================================================= #
+
+knockOutScreen <- function(genes, mutationTypes){
+  
+  geneNames <- lapply(genes, getGeneName)
   geneMutations <- lapply(geneNames, function(x){
-    return(getMutations(x, mutationAnnotations))
+    return(getMutations(x, mutationTypes))
   })
   cellLineIDs <- lapply(geneMutations, function(x){
     return(x$DepMap_ID)
   })
-  
+
   commonCellLinesWithMutations <- Reduce(intersect, cellLineIDs)
-  
+
   effectVec <- Achilles_gene_effect$X1 %in% commonCellLinesWithMutations
-  title <- paste(geneNames, collapse = "+", sep="")
-  title <- paste("knockOut_", title, "_", sep="")
-  mutationAnnotations_str <- paste(mutationAnnotations, collapse = "+", sep="")
-  title <- paste(title, "with_", mutationAnnotations_str, sep="")
-  results <- analyzeDifference(depMatrix, effectVec, title = title)
   
-  return(results)
+  print(sum(effectVec))
+  
+  geneNames = getGeneNames(genes)
+  cellLinesWithMutations = getCellLinesWithMutations(geneNames, mutationTypes)
+  cellLineGroups = Achilles_gene_effect$X1 %in% cellLinesWithMutations
+  
+  print(sum(cellLineGroups))
+  
+  return(cellLineGroups)
 }
 
-expressionScreen <- function(gene, percentile, side){
+expressionScreen <-function(gene, populationType, percentile){
   
-  expression <- CCLE_expression[[gene]]
-  percentile_value <- quantile(expression, c(percentile), names = FALSE)
+  geneExpression = CCLE_expression[[gene]]
   
-  if (side == "top"){
-    selectedIndices <- expression >= percentile_value
-  } else { # bottom
-    selectedIndices <- expression <= percentile_value
+  percentileValue = quantile(geneExpression, c(percentile), names = FALSE)
+  
+  if (populationType == "top"){
+    selectedCellLineIndices = geneExpression >= percentileValue
+  } else {
+    selectedCellLineIndices = geneExpression <= percentileValue
   }
-  selectedCellLines <- CCLE_expression[selectedIndices, ]$X1
   
-  effectVec <- Achilles_gene_effect$X1 %in% selectedCellLines
+  selectedCellLines = CCLE_expression[selectedCellLineIndices, ]$X1
   
-  title = paste("expression_", percentile, "_", gene, sep="")
+  cellLineGroups = Achilles_gene_effect$X1 %in% selectedCellLines
   
-  results <- analyzeDifference(depMatrix, effectVec, title = title)
-  
-  return(results)
+  return(cellLineGroups)
 }
 
-compareLineage <- function(lineage, thresh=4.6){
+lineageScreen <- function(lineage){
   
-  cellLinesOfInterest_name <- celllineinfo[celllineinfo$Lineage == lineage,]$Name
-  cellLinesOfInterest_id <- cellLines[cellLines$CCLE_Name %in% cellLinesOfInterest_name,]
+  cellLineNames = celllineinfo[celllineinfo$Lineage == lineage,]$Name
+  cellLineIDs   = cellLines[cellLines$CCLE_Name %in% cellLineNames, ]$DepMap_ID
   
-  effectVec <- Achilles_gene_effect$X1 %in% cellLinesOfInterest_id$DepMap_ID
+  cellLineGroups = Achilles_gene_effect$X1 %in% cellLineIDs
   
-  title <- paste("lineage_", lineage, sep="")
+  return(cellLineGroups)
   
-  results <- analyzeDifference(depMatrix, effectVec, title= title, thresh = thresh)
-  
-  return(results)
 }
 
 violinPlot <- function(effectVec, gene, trueLab = TRUE, falseLab = FALSE){
@@ -191,14 +283,6 @@ violinPlot <- function(effectVec, gene, trueLab = TRUE, falseLab = FALSE){
            geom_violin())
 }
 
-getMutations <- function(geneName, mutationAnnotations = "damaging"){
-  
-  allMutationsOfGene <- CCLE_mutations[CCLE_mutations$Hugo_Symbol == geneName, ]
-  subsetMutations <- allMutationsOfGene[allMutationsOfGene$Variant_annotation %in% mutationAnnotations, ]
-  
-  return(subsetMutations)
-}
-
 createFeatherFiles <- function(){
   
   library(readr)
@@ -206,13 +290,13 @@ createFeatherFiles <- function(){
   celllineinfo <- read_csv("/Volumes/Rohatgi_CRISPR_Drive/DepMap Exploration/analysisScripts/depmapData/celllineinfo.csv",
                            progress = FALSE)
   CCLE_mutations <- read_csv("/Volumes/Rohatgi_CRISPR_Drive/DepMap Exploration/analysisScripts/depmapData/CCLE_mutations.csv",
-                           progress = FALSE)
+                             progress = FALSE)
   Achilles_gene_effect <- read_csv("/Volumes/Rohatgi_CRISPR_Drive/DepMap Exploration/analysisScripts/depmapData/Achilles_gene_effect.csv",
-                                  progress = FALSE)
+                                   progress = FALSE)
   CCLE_expression <- read_csv("/Volumes/Rohatgi_CRISPR_Drive/DepMap Exploration/analysisScripts/depmapData/CCLE_expression_full.csv",
-                                progress = FALSE)
+                              progress = FALSE)
   cellLines <- read_csv("/Volumes/Rohatgi_CRISPR_Drive/DepMap Exploration/analysisScripts/depmapData/DepMap-2019q1-celllines_v2.csv",
-                                    progress = FALSE)
+                        progress = FALSE)
   
   
   write_feather(celllineinfo, "celllineinfo.feather")
@@ -221,7 +305,6 @@ createFeatherFiles <- function(){
   write_feather(cellLines, "cellLines.feather")
   write_feather(Achilles_gene_effect, "Achilles_gene_effect.feather")
 }
-
 
 loadFeatherFiles <- function(){
   
@@ -240,3 +323,62 @@ loadFeatherFiles <- function(){
   
   print("COMPLETE")
 }
+
+# OLD FUNCTIONS BELOW
+
+# knockOut <- function(geneVec, mutationAnnotations, thresh = 4.6){
+# 
+#   geneNames <- lapply(geneVec, getGeneName)
+#   geneMutations <- lapply(geneNames, function(x){
+#     return(getMutations(x, mutationAnnotations))
+#   })
+#   cellLineIDs <- lapply(geneMutations, function(x){
+#     return(x$DepMap_ID)
+#   })
+# 
+#   commonCellLinesWithMutations <- Reduce(intersect, cellLineIDs)
+# 
+#   effectVec <- Achilles_gene_effect$X1 %in% commonCellLinesWithMutations
+#   title <- paste(geneNames, collapse = "+", sep="")
+#   title <- paste("knockOut_", title, "_", sep="")
+#   mutationAnnotations_str <- paste(mutationAnnotations, collapse = "+", sep="")
+#   title <- paste(title, "with_", mutationAnnotations_str, sep="")
+#   results <- analyzeDifference(depMatrix, effectVec, title = title)
+# 
+#   return(results)
+# }
+# 
+# expressionScreen <- function(gene, percentile, side){
+#   
+#   expression <- CCLE_expression[[gene]]
+#   percentile_value <- quantile(expression, c(percentile), names = FALSE)
+#   
+#   if (side == "top"){
+#     selectedIndices <- expression >= percentile_value
+#   } else { # bottom
+#     selectedIndices <- expression <= percentile_value
+#   }
+#   selectedCellLines <- CCLE_expression[selectedIndices, ]$X1
+#   
+#   effectVec <- Achilles_gene_effect$X1 %in% selectedCellLines
+#   
+#   title = paste("expression_", percentile, "_", gene, sep="")
+#   
+#   results <- analyzeDifference(depMatrix, effectVec, title = title)
+#   
+#   return(results)
+# }
+# 
+# compareLineage <- function(lineage, thresh=4.6){
+#   
+#   cellLinesOfInterest_name <- celllineinfo[celllineinfo$Lineage == lineage,]$Name
+#   cellLinesOfInterest_id <- cellLines[cellLines$CCLE_Name %in% cellLinesOfInterest_name,]
+#   
+#   effectVec <- Achilles_gene_effect$X1 %in% cellLinesOfInterest_id$DepMap_ID
+#   
+#   title <- paste("lineage_", lineage, sep="")
+#   
+#   results <- analyzeDifference(depMatrix, effectVec, title= title, thresh = thresh)
+#   
+#   return(results)
+# }
