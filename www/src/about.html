@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <div class="col-sm-8">
-  <h3>Collin Schlager</h3>
+  <h3>App Developer</h3>
   
   <div style="margin-left: 20px;">
-    <!--<p style="color: grey; font-style: italic">Developer</p>-->
+    <h5>Collin Schlager</h5>
     <p style="margin: 0px;">Department of Biochemistry</p>
     <p style="margin: 0px;">Stanford University</p>
     <a href="mailto:schlager@stanford.edu" style="margin: 0px;">schlager@stanford.edu</a>
     <p style="margin: 0px;">(Summer 2019)</p>
   </div>
   
-  <h3>Version</h3>
+  <h3>App Version</h3>
     <div style="margin-left: 20px;">
       <p>
-        1.0.1 
+        <strong>1.0.2</strong>
         <br>
         <a href="https://github.com/schlagercollin/depMapScreener">
           GitHub Repo
@@ -21,11 +21,22 @@
       </p>
     </div>
     
+  <h3>DepMap Data Version</h3>
+    <div style="margin-left: 20px;">
+      <p>
+        <a href="http://www.depmap.org/portal/download/">2019 Q2</a>
+      </p>
+    </div>
   <hr>
+  
+  <img src="electron-logo.png" height = 60px/>
+  <img src="r-logo.png" height = 60px/>
+  <img src="r-shiny-logo.png" height = 80px/>
     
   <h3>Description</h3>
-    <p>An R-Shiny application to visualize virtual screens using the Broad Institute's DepMap data.</p>
-  
+  <div style="margin-left: 20px;">
+    <p>An R-Shiny application to visualize perform virtual screen analysis using the Broad Institute's DepMap data.</p>
+
     <ol>
       
       <li><h5>Parameters (start here)</h5></li>
@@ -35,22 +46,49 @@
             dependencies.
           </p>
           
-          <p style="font-style: italic">
-            "Knock Out" separates cell lines into 
-            two groups determined by whether they have damaging mutations in a given gene.
-          </p>
+          <ul>
+            <li>
+              <p style="font-style: italic">
+                "Knock Out" separates cell lines into 
+                two groups determined by whether they have damaging mutations in a given gene.
+              </p>
+            </li>
+            <li>
+              <p style="font-style: italic">
+                "Expression" separates cell lines into groups based on their expression values.
+                This is loosely analogous to a virtual reporter screen, where highly fluorescent
+                cells are compared against a baseline group.
+              </p>
+            </li>
+            <li>
+              <p style="font-style: italic">
+                "Lineage" separates cell lines based on their original lineage.
+              </p>
+            </li>
+            <li>
+              <p style="font-style: italic">
+                "Custom" allows you to specify a list of DepMap cell line IDs (e.g. ACH-000009)
+                that you want to include in the condition group. The rest of the cell lines profiled
+                will be used as the control group.
+              </p>
+            </li>
+          </ul>
+
           
-      <li><h5>Screen Plot</h5></li>
+      <li><h5>Enrichment Results</h5></li>
           <p>
             View differential dependencies for each gene.
+            View and download the quantitative results of the screen.
           </p>
           
           <p style="font-style: italic">
             A volcano plot with difference in mean depedency score (x-axis) and significance of the difference (y-axis) 
             is plotted for every gene. Negative x-axis values imply enhanced dependency in the condition group.
+            The table on the differential dependencies for each gene across the two cell line groups. This output comes
+            from the R limma package and its use here is adapted from Chan et al (see below).
           </p>
           
-      <li><h5>Gene Plot</h5></li>
+      <li><h5>Gene-Level</h5></li>
           <p>
             View the depedency score distributions across cell lines for a given gene.
           </p>
@@ -59,37 +97,25 @@
             Violin plots displaying the distribution of dependency score for the condition group and the control group.
           </p>
           
-      <li><h5>Table</h5></li>
+      <li><h5>View Cell Lines</h5></li>
           <p>
-            View and download the quantitative results of the screen.
+            View the cell lines that belong to your condition and control groups.
           </p>
           
           <p style="font-style: italic">
-            Statistics on the differential dependencies for each gene across the two cell line groups.
-          </p>
-          
-      <li><h5>Conditioned Cell Lines</h5></li>
-          <p>
-            View the cell lines that belong to your condition group.
-          </p>
-          
-          <p style="font-style: italic">
-            The cell lines that have been grouped together based on the parameters chosen.
+            The cell lines have been grouped together based on the parameters chosen.
           </p>
           
       <li><h5>Mutation Lookup</h5></li>
           <p>
-            Explore the mutation space represented in the DepMap data gene-by-gene.
+            Explore the mutation space represented in the DepMap data by gene or by cell type.
           </p>
           
           <p style="font-style: italic">
             Given an input gene, displays the cell lines that have annotated mutations in that gene.
           </p>
-          
-          
-        
-
     </ol>
+  </div>
     
     
   <hr>
@@ -122,7 +148,7 @@
     .
   </p>
   </div>
-  <h3>Framework Help</h3>
+  <h3>Framework</h3>
   <div style="margin-left: 20px;">
   <p>
     For Electron deployment, the following template was modified: 

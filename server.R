@@ -2,130 +2,42 @@ library(shiny)
 library(DT)
 library(plotly)
 
-
+# This file contains functions that perform the data analysis
 source("depMapAnalysis.R")
-
-geneList <<- scan("depmapData_feather/geneList.csv",
-                  what="character",
-                  sep=",")
-
-lineages <<- scan("depmapData_feather/lineages.csv",
-                  what="character",
-                  sep=",")
-
-depGeneList <<- scan("depmapData_feather/depGenes.csv",
-                     what="character",
-                     sep=",")
-
-mutationAnnotations <<- scan("depmapData_feather/mutationAnnotations.csv",
-                               what="character",
-                               sep=",")
 
 # Load in the DepMap data (into global vars)
 # loadFeatherFiles()
 
-
-server <- function(input, output, session) {
-  
+# FUNCTION
+# ========
+# Hides the startup loading divs and updates the select input
+# options with the data that loaded.
+startUp <- function(session) {
   hideElement(selector = ".item-loading")
-  # Hide the loading message when the rest of the server function has executed
   hide(id = "loading-content-container", anim = TRUE, animType = "fade")
-
+  
   updateSelectizeInput(session, 'myKnockoutGene', choices = geneList, server = TRUE)
   updateSelectizeInput(session, 'myMutationAnnotation', choices = mutationAnnotations, server = TRUE, selected = "damaging")
   updateSelectizeInput(session, 'myExpressionGene', choices = geneList, server = TRUE)
   updateSelectizeInput(session, 'myLineage', choices = lineages, server = TRUE)
-  updateSelectizeInput(session, 'mutationLookup_gene', choices = geneList, server = TRUE)
+  updateSelectizeInput(session, 'mutationLookup_query', choices = c(geneList, CCLE_mutations$DepMap_ID), server = TRUE)
+}
 
-  # Reactive expression to generate the requested distribution. This is
-  # called whenever the inputs change. The renderers defined
-  # below then all use the value computed from this expression
-  data <- eventReactive(input$runAnalysis, {
+# ========================================================#
+# PLOTS                                                   #
+#   - for some reason, these have to be before the server # 
+#     object due to some promise default issue            #
+# ======================================================= #
 
-    screenType <- input$screenType
-    
-    showElement(selector = ".item-loading")
-    hideElement(selector = ".no-screen-run")
-    
-    if(screenType == 'knockout'){
-      return(knockOut(input$myKnockoutGene,
-                      input$myMutationAnnotation))
-    }
-
-    else if(screenType == 'expression'){
-      
-      if (input$populationType == "top"){
-        percentile <- 1 - (input$topPercentile / 100)
-      } else {
-        percentile <- input$botPercentile / 100
-      }
-      
-      print(percentile)
-      
-      return(expressionScreen(input$myExpressionGene,
-                              percentile,
-                              input$populationType))
-    }
-
-    else { # (screenType == 'lineage')
-      return(compareLineage(input$myLineage))
-    }
-
-  })
+# This function just takes some of the code out of the server function
+createPlots <- function(input, output, analysisData){
   
-  geneLevelData <- eventReactive(input$runGenePlot, {
-                                 
-        myGene <- input$myPlotGene
-        print(myGene)
-        effectVec <- data()$effectVec
-        
-        x <- ifelse(effectVec, "Condition", "Control")
-        y <- Achilles_gene_effect[[myGene]]
-        
-        cellLine_ids <- Achilles_gene_effect$X1
-        
-        translation <- data.frame("DepMap_ID" = cellLine_ids)
-        
-        mini <- cellLines[,c("DepMap_ID", "CCLE_Name")]
-        
-        translation <- left_join(translation, mini, by = "DepMap_ID")
-        
-        name <- translation$CCLE_Name
-        
-        data <- data.frame("Cell.Line.Group" = x, "Dependency.Score" = y, "Cell.Line" = name)
-        
-        return(data)
-        
-  })
-  
-  mutationLookupData <- eventReactive(input$lookupMutations, {
-    
-    myQuery <- input$mutationLookup_gene
-    geneList <- lapply(myQuery, getGeneName)
-  
-    data <- mutsInDepMap[mutsInDepMap$Hugo_Symbol %in% geneList, ]
-    
-    return(data)
-    
-  })
-  
-  observeEvent(data(), {
-    updateSelectizeInput(session, 'myPlotGene', choices = data()$data$Gene, server = TRUE)
-    hideElement(selector = ".item-loading")
-  })
-
-  # Generate a plot of the data. Also uses the inputs to build the
-  # plot label. Note that the dependencies on both the inputs and
-  # the 'data' reactive expression are both tracked, and all expressions
-  # are called in the sequence implied by the dependency graph
   output$plot <- renderPlotly({
     
-    df <- data.frame(`x.Effect.Size` = data()$data$EffectSize,
-                     `y.neg.log10.p.value` = -log10(data()$data$p.value),
-                     `text.Gene.Name` = data()$data$Gene)
-    
-    p <- plot_ly(data()$data, x = ~EffectSize,
-            y = ~`-log10(p.value)`,
+
+    plot_ly(analysisData[["Enrichment"]],
+            x = ~`EffectSize`,
+            y = ~get(input$enrichmentPlot_yaxis),
             text = ~Gene,
             hovertemplate = paste(
               "<b>%{text}</b><br>",
@@ -133,9 +45,9 @@ server <- function(input, output, session) {
               "%{y}",
               "<extra></extra>"
             ),
-            color = ~`-log10(p.value)`,
+            color = ~get(input$enrichmentPlot_yaxis),
             colors = "OrRd",
-            size = ~`-log10(p.value)`,
+            size = ~get(input$enrichmentPlot_yaxis),
             type = "scattergl",
             mode = "markers",
             height = 500,
@@ -145,38 +57,36 @@ server <- function(input, output, session) {
                 width = 1
               )
             )) %>%
-    hide_colorbar() %>%
-    layout(xaxis = list(title = "Mean Depedency Score Difference"),
-           yaxis = list(title = "-log(p.value)"),
-           showlegend = FALSE)
-    })
-  
+      hide_colorbar() %>%
+      layout(xaxis = list(title = "Mean Dependency Score Difference"),
+             yaxis = list(title = input$enrichmentPlot_yaxis),
+             showlegend = FALSE)
+  })
 
-  # # Generate a summary of the data
-  output$stats1 <- renderUI({
-    HTML(paste("<b><p style='word-wrap: break-word; color: red'> ", sprintf(data()$status), "</p></b>", sep=""))
-  })
-  
-  output$about_HTML <- renderUI({
-    HTML(paste(readLines("www/src/about.html"), collapse=" "))
-  })
-  
   output$cellLinePlot <- renderPlotly({
-    df <- data.frame("Category" = c("Cell Lines in Condition", "Cell Lines in Control"),
-                     "Values" = c(data()$stats$trial, data()$stats$control))
-    
-    p <- plot_ly(df, labels = ~Category, 
-                 values = ~Values,
-                 type = "pie",
-                 textinfo = "percent+value")
+  
+     numInCondition = dim(analysisData[["CellLineInfo"]][["condition"]])[1]
+     numInControl = dim(analysisData[["CellLineInfo"]][["control"]])[1]
+  
+     df <- data.frame("Category" = c("Cell Lines in Condition","Cell Lines in Control"),
+                      "Values" = c(numInCondition, numInControl))
+  
+     p <- plot_ly(df, labels = ~Category,
+                  values = ~Values,
+                  type = "pie",
+                  textinfo = "percent+value")
   })
   
   output$genePlot <- renderPlotly({
     
-    p <- plot_ly(geneLevelData(),
+
+    geneDep = analysisData[["GeneDependencies"]]
+    
+    p <- plot_ly(geneDep,
                  x = ~`Cell.Line.Group`,
-                 y = ~`Dependency.Score`,
-                 text = ~`Cell.Line`,
+                 y = ~get(input$myPlotGene),
+                 # split = ~`Cell.Line.Group`,
+                 text = ~`Cell.Line.Name`,
                  type = 'violin',
                  height = 500,
                  points="all",
@@ -188,7 +98,7 @@ server <- function(input, output, session) {
                  meanline = list(
                    visible = T
                  )
-    ) %>% 
+    ) %>%
       layout(
         yaxis = list(
           title = "DepMap Dependency Score",
@@ -199,10 +109,60 @@ server <- function(input, output, session) {
         )
       )
   })
+}
+
+# ================================== #
+# R Shiny Server Object              #
+# ================================== #
+server <- function(input, output, session) {
+  
+  # ================================== #
+  # Main Server Logic                  #
+  # ================================== #
+  
+  # Updates inputs with initial options
+  startUp(session)
+  
+  # Note: promise structure so that no action is blocking
+  
+  # On runAnalysis button press, get cellLineGroups indicator vector
+  cellLineGroups <- eventReactive(input$runAnalysis, {return(getCellLineGroups(input, output))})
+  # Then run the analysis and return the analysisData object
+  analysisData <- eventReactive(cellLineGroups(), {return(performAnalysis(cellLineGroups()))})
+  
+  # Once the analysisData object is obtained, update the select input options and update the plots
+  observeEvent(analysisData(), {
+    updateSelectizeInput(session, 'myPlotGene', choices = analysisData()$Enrichment$Gene, server = TRUE)
+    
+    plotAxisChoices = colnames(analysisData()$Enrichment)[-1] # without first `Gene` column
+    
+    updateSelectizeInput(session, 'enrichmentPlot_yaxis', selected = "-log10(p.value)", choices = plotAxisChoices, server = TRUE)
+    hideElement(selector = ".item-loading")
+    createPlots(input, output, analysisData())
+  })
+  
+  # Handles the mutation data query. Returns data table of
+  # annotations given the query (either depmap id or gene name)
+  mutationLookupData <- eventReactive(input$lookupMutations, {
+    query = input$mutationLookup_query
+    return(getMutationData(query))
+  })
+  
+  # ================================== #
+  # HTML Page Renderers                #
+  # ================================== #
+  
+  output$about_HTML <- renderUI({
+    HTML(paste(readLines("www/src/about.html"), collapse=" "))
+  })
+  
+  # ================================== #
+  # TABLES                             #
+  # ================================== #
 
   # Generate an HTML table view of the data
   output$mytable = DT::renderDataTable(
-    data()$data,
+    analysisData()[["Enrichment"]],
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -211,7 +171,7 @@ server <- function(input, output, session) {
   )
   
   output$conditionCellLines = DT::renderDataTable(
-    data()$conditionCellLines,
+    analysisData()[["CellLineInfo"]][["condition"]],
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -220,7 +180,7 @@ server <- function(input, output, session) {
   )
   
   output$controlCellLines = DT::renderDataTable(
-    data()$controlCellLines,
+    analysisData()[["CellLineInfo"]][["control"]],
     extensions = 'FixedColumns',
     options = list(
       scrollX = TRUE,
@@ -237,16 +197,66 @@ server <- function(input, output, session) {
     )
   )
   
-  # Downloadable csv of selected dataset ----
-  output$downloadData <- downloadHandler(
+  output$geneLevelDep = DT::renderDataTable(
+    analysisData()[["GeneDependencies"]],
+    options = list(
+      scrollX = TRUE,
+      scrollY = TRUE
+    )
+  )
+  
+  # ================================== #
+  # FILE DOWNLOADS                     #
+  # ================================== #
+  # TODO: make this a single function
+  
+  # Downloads enrichment data table
+  output$downloadEnrichment <- downloadHandler(
     filename = function() {
-      paste(data()$title, ".csv", sep = "")
+      paste("enrichment_analysis", ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(data()$data, file)
+      write.csv(analysisData()[["Enrichment"]], file)
     }
   )
   
+  # Downloads conditioned cell line annotations
+  output$downloadConditioned <- downloadHandler(
+    filename = function() {
+      paste("condition_cell_lines", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(analysisData()[["CellLineInfo"]][["condition"]], file)
+    }
+  )
   
+  # Downloads control cell line annotations
+  output$downloadControl <- downloadHandler(
+    filename = function() {
+      paste("control_cell_lines", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(analysisData()[["CellLineInfo"]][["control"]], file)
+    }
+  )
   
+  # Downloads gene-wise dependency (this is a big file and can take a while)
+  output$downloadGeneDep <- downloadHandler(
+    filename = function() {
+      paste("gene_dependency", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(analysisData()[["GeneDependencies"]], file)
+    }
+  )
+  
+  # Downloads the mutation data table that the user is searching
+  output$downloadMutation <- downloadHandler(
+    filename = function() {
+      paste("mutation_annotations", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(mutationLookupData(), file)
+    }
+  )
 }
