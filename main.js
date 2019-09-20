@@ -68,7 +68,7 @@ function createWindow () {
 
     loading.once('show', () => {
       console.log(new Date().toISOString()+'::show loading')
-      mainWindow = new BrowserWindow({webPreferences:{nodeIntegration:false}, show:false, width: 900, height: 700, title:"DepMapScreener - 1.0.1", icon: path.join(__dirname, 'assets/icons/png/64x64.png')})
+      mainWindow = new BrowserWindow({webPreferences:{nodeIntegration:false}, show:false, width: 900, height: 700, title:"DepMapScreener - 1.0.2", icon: path.join(__dirname, 'assets/icons/png/64x64.png')})
       /*
         mainWindow = new BrowserWindow({
           width: 800,
